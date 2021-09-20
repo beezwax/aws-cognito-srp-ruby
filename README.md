@@ -37,7 +37,7 @@ aws_srp.authenticate
 
 ## TODO
 
-[ ] Add specs
+* [ ] Add specs
 
 ## Development
 
