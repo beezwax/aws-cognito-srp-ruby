@@ -35,6 +35,10 @@ aws_srp = Aws::CognitoSrp.new(
 aws_srp.authenticate
 ```
 
+## TODO
+
+[ ] Add specs
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. You can
