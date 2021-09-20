@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
 require "aws-sdk-cognitoidentityprovider"
-require "aws/cognito_srp/version"
 
 require "openssl"
 require "digest"
+require "securerandom"
+require "base64"
+
+require "aws/cognito_srp/version"
+require "aws/cognito_srp/errors"
 
 module Aws
   # Client for AWS Cognito Identity Provider using Secure Remote Password (SRP).
@@ -77,7 +81,9 @@ module Aws
         }
       )
 
-      raise unless init_auth_response.challenge_name == PASSWORD_VERIFIER
+      unless init_auth_response.challenge_name == PASSWORD_VERIFIER
+        raise UnexpectedChallenge, "Expected Cognito to respond with a #{PASSWORD_VERIFIER} challenge, got #{init_auth_response.challenge_name} instead"
+      end
 
       challenge_response = process_challenge(init_auth_response.challenge_parameters)
 
@@ -87,7 +93,9 @@ module Aws
         challenge_responses: challenge_response
       )
 
-      raise "new password required" if auth_response.challenge_name == NEW_PASSWORD_REQUIRED
+      if auth_response.challenge_name == NEW_PASSWORD_REQUIRED
+        raise NewPasswordRequired, "Cognito responded to password verifier with a #{NEW_PASSWORD_REQUIRED} challenge"
+      end
 
       auth_response.authentication_result
     end
@@ -101,18 +109,14 @@ module Aws
 
     def calculate_a
       big_a = @g.pow(@small_a_value, @big_n)
-      if big_a % @big_n == 0
-        raise "Safety check for A failed"
-      end
-
+      raise ValueError, "Safety check for A failed" if big_a % @big_n == 0
       big_a
     end
 
     def get_password_authentication_key(username, password, server_b_value, salt)
       u_value = calculate_u(@large_a_value, server_b_value)
-      if u_value == 0
-        raise "U cannot be zero."
-      end
+
+      raise ValueError, "U cannot be zero" if u_value == 0
 
       username_password = "#{@pool_id.split("_")[1]}#{username}:#{password}"
       username_password_hash = hash_sha256(username_password)
@@ -121,8 +125,7 @@ module Aws
       g_mod_pow_xn = @g.pow(x_value, @big_n)
       int_value2 = server_b_value - @k * g_mod_pow_xn
       s_value = int_value2.pow(@small_a_value + u_value * x_value, @big_n)
-      hkdf = compute_hkdf(hex_to_bytes(pad_hex(s_value)), hex_to_bytes(pad_hex(long_to_hex(u_value))))
-      hkdf
+      compute_hkdf(hex_to_bytes(pad_hex(s_value)), hex_to_bytes(pad_hex(long_to_hex(u_value))))
     end
 
     def process_challenge(challenge_parameters)
@@ -131,24 +134,24 @@ module Aws
       srp_b_hex = challenge_parameters.fetch("SRP_B")
       secret_block_b64 = challenge_parameters.fetch("SECRET_BLOCK")
 
-      timestamp = Time.now.utc.strftime("%a %b %-d %H:%M:%S %Z %Y")
+      timestamp = ::Time.now.utc.strftime("%a %b %-d %H:%M:%S %Z %Y")
 
       hkdf = get_password_authentication_key(user_id_for_srp, @password, srp_b_hex.to_i(16), salt_hex)
-      secret_block_bytes = Base64.strict_decode64(secret_block_b64)
+      secret_block_bytes = ::Base64.strict_decode64(secret_block_b64)
       msg = @pool_id.split("_")[1] + user_id_for_srp + secret_block_bytes + timestamp
-      hmac_digest = OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), hkdf, msg)
-      signature_string = Base64.strict_encode64(hmac_digest).force_encoding('utf-8')
+      hmac_digest = ::OpenSSL::HMAC.digest(::OpenSSL::Digest::SHA256.new, hkdf, msg)
+      signature_string = ::Base64.strict_encode64(hmac_digest).force_encoding('utf-8')
 
       {
-        "TIMESTAMP" => timestamp,
-        "USERNAME" => user_id_for_srp,
-        "PASSWORD_CLAIM_SECRET_BLOCK" => secret_block_b64,
-        "PASSWORD_CLAIM_SIGNATURE" => signature_string
+        TIMESTAMP: timestamp,
+        USERNAME: user_id_for_srp,
+        PASSWORD_CLAIM_SECRET_BLOCK: secret_block_b64,
+        PASSWORD_CLAIM_SIGNATURE: signature_string
       }
     end
 
     def hash_sha256(buf)
-      Digest::SHA256.hexdigest(buf)
+      ::Digest::SHA256.hexdigest(buf)
     end
 
     def hex_hash(hex_string)
@@ -172,16 +175,12 @@ module Aws
     end
 
     def get_random(nbytes)
-      random_hex = bytes_to_hex(SecureRandom.bytes(nbytes))
+      random_hex = bytes_to_hex(::SecureRandom.bytes(nbytes))
       hex_to_long(random_hex)
     end
 
     def pad_hex(long_int)
-      hash_str = if long_int.is_a?(String)
-        long_int
-      else
-        long_to_hex(long_int)
-      end
+      hash_str = long_int.is_a?(::String) ? long_int : long_to_hex(long_int)
 
       if hash_str.size % 2 == 1
         hash_str = "0#{hash_str}"
@@ -193,9 +192,9 @@ module Aws
     end
 
     def compute_hkdf(ikm, salt)
-      prk = OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), salt, ikm)
+      prk = ::OpenSSL::HMAC.digest(::OpenSSL::Digest::SHA256.new, salt, ikm)
       info_bits_update = INFO_BITS + 1.chr.force_encoding('utf-8')
-      hmac_hash = OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), prk, info_bits_update)
+      hmac_hash = ::OpenSSL::HMAC.digest(::OpenSSL::Digest::SHA256.new, prk, info_bits_update)
       hmac_hash[0, 16]
     end
 
@@ -205,4 +204,3 @@ module Aws
     end
   end
 end
-
