@@ -1,5 +1,9 @@
 ## Changelog for aws-cognito-srp-ruby
 
+### 0.3.0 (September 29, 2021)
+
+* Added support for Ruby 2.4 and 2.3
+
 ### 0.2.0 (September 20, 2021)
 
 * Added custom exception classes and better error messages
