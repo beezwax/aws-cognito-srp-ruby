@@ -14,7 +14,7 @@ RSpec.describe Aws::CognitoSrp do
             challenge_parameters: {
               "USER_ID_FOR_SRP" => "DUMMY_USER_ID_FOR_SRP",
               "SALT" => "DUMMY_SALT",
-              "SRP_B" => "DUMMY_SRP_B",
+              "SRP_B" => "ABC123",
               "SECRET_BLOCK" => Base64.strict_encode64("DUMMY_SECRET_BLOCK"),
             },
           },

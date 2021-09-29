@@ -10,6 +10,33 @@ require "base64"
 require "aws/cognito_srp/version"
 require "aws/cognito_srp/errors"
 
+if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("2.5")
+  module IntegerWithPow
+    refine Integer do
+      # Integer#pow was introduced in Ruby 2.5
+      # Use OpenSSL's modular exponentiation in older Rubies
+      def pow(b, m)
+        self.to_bn.mod_exp(b, m).to_i
+      end
+    end
+  end
+
+  using IntegerWithPow
+end
+
+if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("2.4")
+  module StringWithUnpack1
+    refine String do
+      # String#unpack1 was introduced in Ruby 2.4
+      def unpack1(fmt)
+        unpack(fmt)[0]
+      end
+    end
+  end
+
+  using StringWithUnpack1
+end
+
 module Aws
   # Client for AWS Cognito Identity Provider using Secure Remote Password (SRP).
   #
@@ -175,8 +202,7 @@ module Aws
     end
 
     def get_random(nbytes)
-      random_hex = bytes_to_hex(::SecureRandom.bytes(nbytes))
-      hex_to_long(random_hex)
+      hex_to_long(bytes_to_hex(::SecureRandom.gen_random(nbytes)))
     end
 
     def pad_hex(long_int)
