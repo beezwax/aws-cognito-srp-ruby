@@ -29,15 +29,20 @@ aws_srp = Aws::CognitoSrp.new(
   password:   "password",
   pool_id:    "pool-id",
   client_id:  "client-id",
-  aws_client: Aws::CognitoIdentityProvider::Client.new(region: "ap-southeast-2")
+  aws_client: Aws::CognitoIdentityProvider::Client.new(region: "aws-region")
 )
 
-aws_srp.authenticate
+resp = aws_srp.authenticate
+
+# Read tokens
+resp.id_token
+resp.access_token
+resp.refresh_token
 ```
 
-## TODO
+## Supported rubies
 
-* [ ] Add specs
+This gem is tested against and supports Ruby 2.3, 2.4, 2.5, 2.6, 2.7 and 3.0.
 
 ## Development
 
