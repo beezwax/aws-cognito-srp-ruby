@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 
   spec.summary       = "AWS Cognito SRP auth for Ruby"
   spec.description   = "Unofficial Ruby library implementing AWS Cognito's SRP authentication flow"
-  spec.homepage      = "https://github.com/pilaf/aws-cognito-srp-ruby"
+  spec.homepage      = "https://github.com/beezwax/aws-cognito-srp-ruby"
   spec.license       = "MIT"
 
   # Specify which files should be added to the gem when it is released.

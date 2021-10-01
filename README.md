@@ -1,7 +1,7 @@
 # Aws::CognitoSrp for Ruby
 
 [![Gem Version](https://badge.fury.io/rb/aws-cognito-srp.svg?style=flat)](https://rubygems.org/gems/aws-cognito-srp)
-![CI](https://github.com/pilaf/aws-cognito-srp-ruby/workflows/CI/badge.svg)
+![CI](https://github.com/beezwax/aws-cognito-srp-ruby/workflows/CI/badge.svg)
 
 An unofficial Ruby library implementing
 [AWS Cognito's SRP authentication flow](https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-authentication-flow.html#Using-SRP-password-verification-in-custom-authentication-flow).
@@ -59,4 +59,11 @@ git commits and the created tag, and push the `.gem` file to
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at
-https://github.com/pilaf/aws-cognito-srp-ruby
+https://github.com/beezwax/aws-cognito-srp-ruby
+
+## Disclaimer
+
+This project is not sponsored by or otherwise affiliated with Amazon Web
+Services, Inc., an Amazon.com, Inc. subsidiary. AWS and Amazon Cognito are
+trademarks of Amazon.com, Inc., or its affiliates in the United States and/or
+other countries.
