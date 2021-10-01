@@ -59,9 +59,10 @@ module Aws
   #   aws_srp.authenticate
   #
   class CognitoSrp
-    USER_SRP_AUTH = "USER_SRP_AUTH"
-    PASSWORD_VERIFIER = "PASSWORD_VERIFIER"
     NEW_PASSWORD_REQUIRED = "NEW_PASSWORD_REQUIRED"
+    PASSWORD_VERIFIER = "PASSWORD_VERIFIER"
+    REFRESH_TOKEN = "REFRESH_TOKEN"
+    USER_SRP_AUTH = "USER_SRP_AUTH"
 
     N_HEX = %w(
       FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1 29024E08
@@ -126,6 +127,19 @@ module Aws
 
       auth_response.authentication_result
     end
+
+    def refresh_tokens(refresh_token)
+      resp = @aws_client.initiate_auth(
+        client_id: @client_id,
+        auth_flow: REFRESH_TOKEN,
+        auth_parameters: {
+          REFRESH_TOKEN: refresh_token
+        }
+      )
+
+      resp.authentication_result
+    end
+    alias_method :refresh, :refresh_tokens
 
     private
 

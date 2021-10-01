@@ -71,4 +71,60 @@ RSpec.describe Aws::CognitoSrp do
       )
     end
   end
+
+  describe "#refresh_tokens" do
+    it "peforms a refresh token flow and returns the new tokens" do
+      client = Aws::CognitoIdentityProvider::Client.new(
+        region: "us-west-2",
+        validate_params: false,
+        stub_responses: {
+          initiate_auth: {
+            authentication_result: {
+              id_token: 'dummy_id_token',
+              access_token: 'dummy_access_token',
+              refresh_token: 'dummy_refresh_token',
+            }
+          }
+        }
+      )
+
+      aws_srp = Aws::CognitoSrp.new(
+        username:   "username",
+        password:   "password",
+        pool_id:    "us-west-2_NqkuZcXQY",
+        client_id:  "4l9rvl4mv5es1eep1qe97cautn",
+        aws_client: client
+      )
+
+      tokens = aws_srp.refresh_tokens("dummy_refresh_token")
+
+      expect(tokens.id_token).to eq('dummy_id_token')
+      expect(tokens.access_token).to eq('dummy_access_token')
+      expect(tokens.refresh_token).to eq('dummy_refresh_token')
+
+      expect(client.api_requests.first).to include(
+        operation_name: :initiate_auth,
+        params: hash_including(
+          auth_flow: "REFRESH_TOKEN",
+          auth_parameters: hash_including(
+            "REFRESH_TOKEN" => "dummy_refresh_token"
+          )
+        )
+      )
+    end
+  end
+
+  describe "#refresh" do
+    it "is an alias for #refresh_tokens" do
+      aws_srp = Aws::CognitoSrp.new(
+        username:   "username",
+        password:   "password",
+        pool_id:    "us-west-2_NqkuZcXQY",
+        client_id:  "4l9rvl4mv5es1eep1qe97cautn",
+        aws_client: Aws::CognitoIdentityProvider::Client.new(region: "us-west-2")
+      )
+
+      expect(aws_srp.method(:refresh)).to eq(aws_srp.method(:refresh_tokens))
+    end
+  end
 end
