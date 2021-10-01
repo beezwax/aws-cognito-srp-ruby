@@ -38,6 +38,10 @@ resp = aws_srp.authenticate
 resp.id_token
 resp.access_token
 resp.refresh_token
+
+# A few hours later ... ⌛️
+
+new_tokens = aws_srp.refresh_tokens(resp.refresh_token)
 ```
 
 ## Supported rubies
