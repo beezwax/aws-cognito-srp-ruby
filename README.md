@@ -46,7 +46,7 @@ new_tokens = aws_srp.refresh_tokens(resp.refresh_token)
 
 ## Supported rubies
 
-This gem is tested against and supports Ruby 2.3 through 3.1, JRuby and
+This gem is tested against and supports Ruby 2.3 through 3.2, JRuby and
 TruffleRuby.
 
 ## Development
