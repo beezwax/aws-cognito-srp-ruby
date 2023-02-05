@@ -85,12 +85,13 @@ module Aws
 
     INFO_BITS = 'Caldera Derived Key'
 
-    def initialize(username:, password:, pool_id:, client_id:, aws_client:)
+    def initialize(username:, password:, pool_id:, client_id:, aws_client:, client_secret: nil)
       @username = username
       @password = password
       @pool_id = pool_id
       @client_id = client_id
       @aws_client = aws_client
+      @client_secret = client_secret
 
       @big_n = hex_to_long(N_HEX)
       @g = hex_to_long(G_HEX)
@@ -100,13 +101,16 @@ module Aws
     end
 
     def authenticate
+      auth_parameters = {
+        USERNAME: @username,
+        SRP_A: long_to_hex(@large_a_value),
+        SECRET_HASH: @client_secret && secret_hash(@username)
+      }.compact
+
       init_auth_response = @aws_client.initiate_auth(
         client_id: @client_id,
         auth_flow: USER_SRP_AUTH,
-        auth_parameters: {
-          USERNAME: @username,
-          SRP_A: long_to_hex(@large_a_value)
-        }
+        auth_parameters: auth_parameters
       )
 
       unless init_auth_response.challenge_name == PASSWORD_VERIFIER
@@ -115,11 +119,17 @@ module Aws
 
       challenge_response = process_challenge(init_auth_response.challenge_parameters)
 
-      auth_response = @aws_client.respond_to_auth_challenge(
+      @user_id_for_srp = challenge_response[:USERNAME]
+
+      hash = @client_secret && secret_hash(@user_id_for_srp)
+
+      params = {
         client_id: @client_id,
         challenge_name: PASSWORD_VERIFIER,
-        challenge_responses: challenge_response
-      )
+        challenge_responses: challenge_response.merge(SECRET_HASH: hash).compact
+      }
+
+      auth_response = @aws_client.respond_to_auth_challenge(params)
 
       if auth_response.challenge_name == NEW_PASSWORD_REQUIRED
         raise NewPasswordRequired, "Cognito responded to password verifier with a #{NEW_PASSWORD_REQUIRED} challenge"
@@ -129,12 +139,15 @@ module Aws
     end
 
     def refresh_tokens(refresh_token)
+      auth_parameters = {
+        REFRESH_TOKEN: refresh_token,
+        SECRET_HASH: @client_secret && secret_hash(@user_id_for_srp)
+      }.compact
+
       resp = @aws_client.initiate_auth(
         client_id: @client_id,
         auth_flow: REFRESH_TOKEN,
-        auth_parameters: {
-          REFRESH_TOKEN: refresh_token
-        }
+        auth_parameters: auth_parameters
       )
 
       resp.authentication_result
@@ -241,6 +254,10 @@ module Aws
     def calculate_u(big_a, big_b)
       u_hex_hash = hex_hash(pad_hex(big_a) + pad_hex(big_b))
       hex_to_long(u_hex_hash)
+    end
+
+    def secret_hash(username)
+      Base64.strict_encode64(OpenSSL::HMAC.digest('sha256', @client_secret, username + @client_id))
     end
   end
 end
