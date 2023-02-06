@@ -119,8 +119,6 @@ module Aws
 
       challenge_response = process_challenge(init_auth_response.challenge_parameters)
 
-      @user_id_for_srp = challenge_response[:USERNAME]
-
       hash = @client_secret && secret_hash(@user_id_for_srp)
 
       params = {
@@ -183,22 +181,22 @@ module Aws
     end
 
     def process_challenge(challenge_parameters)
-      user_id_for_srp = challenge_parameters.fetch("USER_ID_FOR_SRP")
+      @user_id_for_srp = challenge_parameters.fetch("USER_ID_FOR_SRP")
       salt_hex = challenge_parameters.fetch("SALT")
       srp_b_hex = challenge_parameters.fetch("SRP_B")
       secret_block_b64 = challenge_parameters.fetch("SECRET_BLOCK")
 
       timestamp = ::Time.now.utc.strftime("%a %b %-d %H:%M:%S %Z %Y")
 
-      hkdf = get_password_authentication_key(user_id_for_srp, @password, srp_b_hex.to_i(16), salt_hex)
+      hkdf = get_password_authentication_key(@user_id_for_srp, @password, srp_b_hex.to_i(16), salt_hex)
       secret_block_bytes = ::Base64.strict_decode64(secret_block_b64)
-      msg = @pool_id.split("_")[1] + user_id_for_srp + secret_block_bytes + timestamp
+      msg = @pool_id.split("_")[1] + @user_id_for_srp + secret_block_bytes + timestamp
       hmac_digest = ::OpenSSL::HMAC.digest(::OpenSSL::Digest::SHA256.new, hkdf, msg)
       signature_string = ::Base64.strict_encode64(hmac_digest).force_encoding('utf-8')
 
       {
         TIMESTAMP: timestamp,
-        USERNAME: user_id_for_srp,
+        USERNAME: @user_id_for_srp,
         PASSWORD_CLAIM_SECRET_BLOCK: secret_block_b64,
         PASSWORD_CLAIM_SIGNATURE: signature_string
       }
