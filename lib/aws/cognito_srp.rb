@@ -59,6 +59,8 @@ module Aws
   #   aws_srp.authenticate
   #
   class CognitoSrp
+    attr_reader :user_id_for_srp
+
     NEW_PASSWORD_REQUIRED = "NEW_PASSWORD_REQUIRED"
     PASSWORD_VERIFIER = "PASSWORD_VERIFIER"
     REFRESH_TOKEN = "REFRESH_TOKEN"
@@ -118,7 +120,7 @@ module Aws
       end
 
       challenge_response = process_challenge(init_auth_response.challenge_parameters)
-
+      pp init_auth_response.challenge_parameters
       hash = @client_secret && secret_hash(@user_id_for_srp)
 
       params = {
@@ -136,10 +138,10 @@ module Aws
       auth_response.authentication_result
     end
 
-    def refresh_tokens(refresh_token)
+    def refresh_tokens(refresh_token, user_id_for_srp: @user_id_for_srp)
       auth_parameters = {
         REFRESH_TOKEN: refresh_token,
-        SECRET_HASH: @client_secret && secret_hash(@user_id_for_srp)
+        SECRET_HASH: @client_secret && secret_hash(user_id_for_srp)
       }.compact
 
       resp = @aws_client.initiate_auth(
