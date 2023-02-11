@@ -120,7 +120,6 @@ module Aws
       end
 
       challenge_response = process_challenge(init_auth_response.challenge_parameters)
-      pp init_auth_response.challenge_parameters
       hash = @client_secret && secret_hash(@user_id_for_srp)
 
       params = {
