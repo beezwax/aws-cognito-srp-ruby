@@ -1,5 +1,9 @@
 ## Changelog for aws-cognito-srp-ruby
 
+### 0.5.0 (February 14❤︎, 2023)
+
+* Added support for `client_secret`
+
 ### 0.4.0 (October 1, 2021)
 
 * Added `refresh_tokens` method
