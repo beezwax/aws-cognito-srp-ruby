@@ -16,6 +16,6 @@
 
 * Added custom exception classes and better error messages
 
-### 0.1.0 (Septembre 17, 2021)
+### 0.1.0 (September 17, 2021)
 
 * Initial release
