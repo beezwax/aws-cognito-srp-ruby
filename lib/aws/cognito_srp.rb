@@ -24,19 +24,6 @@ if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("2.5")
   using IntegerWithPow
 end
 
-if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("2.4")
-  module StringWithUnpack1
-    refine String do
-      # String#unpack1 was introduced in Ruby 2.4
-      def unpack1(fmt)
-        unpack(fmt)[0]
-      end
-    end
-  end
-
-  using StringWithUnpack1
-end
-
 module Aws
   # Client for AWS Cognito Identity Provider using Secure Remote Password (SRP).
   #
