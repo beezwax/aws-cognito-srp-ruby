@@ -59,8 +59,6 @@ module Aws
   #   aws_srp.authenticate
   #
   class CognitoSrp
-    attr_reader :user_id_for_srp
-
     NEW_PASSWORD_REQUIRED = "NEW_PASSWORD_REQUIRED"
     PASSWORD_VERIFIER = "PASSWORD_VERIFIER"
     REFRESH_TOKEN = "REFRESH_TOKEN"
@@ -86,6 +84,8 @@ module Aws
     G_HEX = '2'
 
     INFO_BITS = 'Caldera Derived Key'
+
+    attr_reader :user_id_for_srp
 
     def initialize(username:, password:, pool_id:, client_id:, aws_client:, client_secret: nil)
       @username = username

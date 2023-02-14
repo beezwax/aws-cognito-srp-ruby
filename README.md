@@ -25,11 +25,12 @@ gem 'aws-cognito-srp'
 require "aws-cognito-srp"
 
 aws_srp = Aws::CognitoSrp.new(
-  username:   "username",
-  password:   "password",
-  pool_id:    "pool-id",
-  client_id:  "client-id",
-  aws_client: Aws::CognitoIdentityProvider::Client.new(region: "aws-region")
+  username:      "username",
+  password:      "password",
+  pool_id:       "pool-id",
+  client_id:     "client-id",
+  client_secret: "client-secret", # Optional
+  aws_client:    Aws::CognitoIdentityProvider::Client.new(region: "aws-region")
 )
 
 resp = aws_srp.authenticate
@@ -44,9 +45,22 @@ resp.refresh_token
 new_tokens = aws_srp.refresh_tokens(resp.refresh_token)
 ```
 
+In case you need access to the `USER_ID_FOR_SRP` value from the auth response,
+you can do so by calling `aws_srp.user_id_for_srp` *after* the initial auth
+(`aws_srp` being the same as in the code example above).
+
+If you're using a `client_secret` and calling `#refresh_tokens` in a different
+instance than the one that performed the initial call to `#authenticate` you
+will have to pass the `USER_ID_FOR_SRP` value as a keyword argument:
+
+```ruby
+new_tokens = aws_srp.refresh_token(resp.refresh_token,
+                                   user_id_for_srp: your_user_id_for_srp)
+```
+
 ## Supported rubies
 
-This gem is tested against and supports Ruby 2.3 through 3.2, JRuby and
+This gem is tested against and supports Ruby 2.4 through 3.2, JRuby and
 TruffleRuby.
 
 ## Development

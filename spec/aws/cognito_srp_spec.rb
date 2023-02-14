@@ -81,11 +81,11 @@ RSpec.describe Aws::CognitoSrp do
     context 'when client_secret is provided' do
       let(:aws_srp) do
         Aws::CognitoSrp.new(
-          username:   "username",
-          password:   "password",
-          pool_id:    "us-west-2_NqkuZcXQY",
-          client_id:  "4l9rvl4mv5es1eep1qe97cautn",
-          aws_client: client,
+          username:      "username",
+          password:      "password",
+          pool_id:       "us-west-2_NqkuZcXQY",
+          client_id:     "4l9rvl4mv5es1eep1qe97cautn",
+          aws_client:    client,
           client_secret: "client-secret"
         )
       end
@@ -176,12 +176,12 @@ RSpec.describe Aws::CognitoSrp do
     context 'when client_secret is provided' do
       let(:aws_srp) do
         Aws::CognitoSrp.new(
-          username:   "username",
-          password:   "password",
-          pool_id:    "us-west-2_NqkuZcXQY",
-          client_id:  "4l9rvl4mv5es1eep1qe97cautn",
-          aws_client: client,
-          client_secret: "client_secret"
+          username:      "username",
+          password:      "password",
+          pool_id:       "us-west-2_NqkuZcXQY",
+          client_id:     "4l9rvl4mv5es1eep1qe97cautn",
+          aws_client:    client,
+          client_secret: "client-secret"
         )
       end
 
