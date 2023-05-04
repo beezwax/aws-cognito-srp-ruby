@@ -58,6 +58,61 @@ new_tokens = aws_srp.refresh_token(resp.refresh_token,
                                    user_id_for_srp: your_user_id_for_srp)
 ```
 
+### MFA
+
+You can enable MFA.
+
+```ruby
+resp = aws_srp.associate_software_token(access_token)
+puts resp.secret_code
+
+# setup MFA app with `resp.secret_code` and input code showed in your MFA app.
+user_code = gets.chomp
+
+aws_srp.verify_software_token(access_token, user_code)
+
+aws_srp.set_user_mfa_preference(
+  access_token,
+  software_token_mfa_settings: {
+    enabled: true,
+    preferred_mfa: true
+  }
+)
+```
+
+Authentication with MFA.
+
+```ruby
+resp = aws_srp.authenticate
+
+if resp.respond_to?(:challenge_name) && resp.challenge_name == 'SOFTWARE_TOKEN_MFA'
+
+  user_code = get.chomp # input MFA code
+
+  resp = aws_srp.respond_to_auth_challenge_mfa(
+    resp.challenge_name,
+    resp.session,
+    user_code
+  )
+end
+
+resp.id_token
+resp.access_token
+resp.refresh_token
+```
+
+You can disable MFA.
+
+```ruby
+aws_srp.set_user_mfa_preference(
+  access_token,
+  software_token_mfa_settings: {
+    enabled: false,
+    preferred_mfa: false
+  }
+)
+```
+
 ## Supported rubies
 
 This gem is tested against and supports Ruby 2.4 through 3.2, JRuby and

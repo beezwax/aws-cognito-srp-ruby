@@ -50,6 +50,8 @@ module Aws
     PASSWORD_VERIFIER = "PASSWORD_VERIFIER"
     REFRESH_TOKEN = "REFRESH_TOKEN"
     USER_SRP_AUTH = "USER_SRP_AUTH"
+    SOFTWARE_TOKEN_MFA = "SOFTWARE_TOKEN_MFA"
+    SMS_MFA = "SMS_MFA"
 
     N_HEX = %w(
       FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1 29024E08
@@ -117,6 +119,10 @@ module Aws
 
       auth_response = @aws_client.respond_to_auth_challenge(params)
 
+      if auth_response.challenge_name == SOFTWARE_TOKEN_MFA || auth_response.challenge_name == SMS_MFA
+        return auth_response
+      end
+
       if auth_response.challenge_name == NEW_PASSWORD_REQUIRED
         raise NewPasswordRequired, "Cognito responded to password verifier with a #{NEW_PASSWORD_REQUIRED} challenge"
       end
@@ -139,6 +145,53 @@ module Aws
       resp.authentication_result
     end
     alias_method :refresh, :refresh_tokens
+
+    def associate_software_token(access_token)
+      @aws_client.associate_software_token(access_token: access_token)
+    end
+
+    def verify_software_token(access_token, user_code, friendly_device_name: nil)
+      params = {
+        access_token: access_token,
+        user_code: user_code,
+        friendly_device_name: friendly_device_name
+      }.compact
+      @aws_client.verify_software_token(params)
+    end
+
+    def set_user_mfa_preference(access_token, software_token_mfa_settings: nil, sms_mfa_settings: nil)
+      params = {
+        access_token: access_token,
+        software_token_mfa_settings: software_token_mfa_settings,
+        sms_mfa_settings: sms_mfa_settings
+      }.compact
+
+      @aws_client.set_user_mfa_preference(params)
+    end
+
+    def respond_to_auth_challenge_mfa(challenge_name, session, user_code, user_id_for_srp: @user_id_for_srp)
+      hash = @client_secret && secret_hash(user_id_for_srp)
+
+      challenge_responses = {
+        USERNAME: user_id_for_srp,
+        SECRET_HASH: hash
+      }
+      if challenge_name == SOFTWARE_TOKEN_MFA
+        challenge_responses[:SOFTWARE_TOKEN_MFA_CODE] = user_code
+      elsif challenge_name == SMS_MFA
+        challenge_responses[:SMS_MFA_CODE] = user_code
+      end
+
+      params = {
+        challenge_name: challenge_name,
+        session: session,
+        client_id: @client_id,
+        challenge_responses: challenge_responses.compact
+      }.compact
+
+      resp = @aws_client.respond_to_auth_challenge(params)
+      resp.authentication_result
+    end
 
     private
 
