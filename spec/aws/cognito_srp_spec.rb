@@ -284,118 +284,6 @@ RSpec.describe Aws::CognitoSrp do
     end
   end
 
-  describe "#verify_software_token" do
-    let(:client) do
-      Aws::CognitoIdentityProvider::Client.new(
-        region: "us-west-2",
-        validate_params: false,
-        stub_responses: {
-          associate_software_token: {
-            secret_code: "dummy_secret_code"
-          }
-        }
-      )
-    end
-
-    let(:aws_srp) do
-      Aws::CognitoSrp.new(
-        username:   "username",
-        password:   "password",
-        pool_id:    "us-west-2_NqkuZcXQY",
-        client_id:  "4l9rvl4mv5es1eep1qe97cautn",
-        aws_client: client
-      )
-    end
-
-    it "calls associate_software_token api with access_token parameter" do
-      response = aws_srp.associate_software_token('dummy_access_token')
-      expect(client.api_requests[0]).to include(
-        operation_name: :associate_software_token,
-        params: hash_including(
-          access_token: 'dummy_access_token'
-        )
-      )
-      expect(response.secret_code).to eq('dummy_secret_code')
-    end
-  end
-
-  describe "#verify_software_token" do
-    let(:client) do
-      Aws::CognitoIdentityProvider::Client.new(
-        region: "us-west-2",
-        validate_params: false,
-        stub_responses: {
-          verify_software_token: {
-            status: "SUCCESS"
-          }
-        }
-      )
-    end
-
-    let(:aws_srp) do
-      Aws::CognitoSrp.new(
-        username:   "username",
-        password:   "password",
-        pool_id:    "us-west-2_NqkuZcXQY",
-        client_id:  "4l9rvl4mv5es1eep1qe97cautn",
-        aws_client: client
-      )
-    end
-
-    it "calls verify_software_token api with access_token and user_code" do
-      aws_srp.verify_software_token('dummy_access_token', 'dummy_user_code')
-      expect(client.api_requests[0]).to include(
-        operation_name: :verify_software_token,
-        params: hash_including(
-          access_token: 'dummy_access_token',
-          user_code: 'dummy_user_code'
-        )
-      )
-    end
-  end
-
-  describe "#set_user_mfa_preference" do
-    let(:client) do
-      Aws::CognitoIdentityProvider::Client.new(
-        region: "us-west-2",
-        validate_params: false,
-        stub_responses: {
-          set_user_mfa_preference: {}
-        }
-      )
-    end
-
-    let(:aws_srp) do
-      Aws::CognitoSrp.new(
-        username:   "username",
-        password:   "password",
-        pool_id:    "us-west-2_NqkuZcXQY",
-        client_id:  "4l9rvl4mv5es1eep1qe97cautn",
-        aws_client: client
-      )
-    end
-
-    it "calls set_user_mfa_preference api with access_token and settings" do
-      aws_srp.set_user_mfa_preference(
-        'dummy_access_token',
-        software_token_mfa_settings: {
-          enabled: true,
-          preferred_mfa: true
-        }
-      )
-      expect(client.api_requests[0]).to include(
-        operation_name: :set_user_mfa_preference,
-        params: hash_including(
-          access_token: 'dummy_access_token',
-          software_token_mfa_settings: {
-            enabled: true,
-            preferred_mfa: true
-          }
-        )
-      )
-    end
-  end
-
   describe "#respond_to_auth_challenge_mfa" do
     let(:client) do
       Aws::CognitoIdentityProvider::Client.new(
@@ -423,7 +311,7 @@ RSpec.describe Aws::CognitoSrp do
       )
     end
 
-    it "calls set_user_mfa_preference api with access_token and settings" do
+    it "calls respond_to_auth_challenge api with access_token and settings" do
       response = aws_srp.respond_to_auth_challenge_mfa(
         'SOFTWARE_TOKEN_MFA',
         'dummy_session',

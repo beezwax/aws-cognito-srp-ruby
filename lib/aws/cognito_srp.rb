@@ -146,29 +146,6 @@ module Aws
     end
     alias_method :refresh, :refresh_tokens
 
-    def associate_software_token(access_token)
-      @aws_client.associate_software_token(access_token: access_token)
-    end
-
-    def verify_software_token(access_token, user_code, friendly_device_name: nil)
-      params = {
-        access_token: access_token,
-        user_code: user_code,
-        friendly_device_name: friendly_device_name
-      }.compact
-      @aws_client.verify_software_token(params)
-    end
-
-    def set_user_mfa_preference(access_token, software_token_mfa_settings: nil, sms_mfa_settings: nil)
-      params = {
-        access_token: access_token,
-        software_token_mfa_settings: software_token_mfa_settings,
-        sms_mfa_settings: sms_mfa_settings
-      }.compact
-
-      @aws_client.set_user_mfa_preference(params)
-    end
-
     def respond_to_auth_challenge_mfa(challenge_name, session, user_code, user_id_for_srp: @user_id_for_srp)
       hash = @client_secret && secret_hash(user_id_for_srp)
 
