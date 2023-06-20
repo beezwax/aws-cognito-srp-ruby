@@ -63,7 +63,7 @@ new_tokens = aws_srp.refresh_token(resp.refresh_token,
 ### MFA (multi-factor authentication)
 
 If you're using MFA you should check for the challenge after calling
-`#authenticate` and respond with `#respond_to_mfa_challenge`.
+`#authenticate` and respond accordingly with `#respond_to_mfa_challenge`.
 
 ```ruby
 resp = aws_srp.authenticate
@@ -86,11 +86,20 @@ Note that when `#authenticate` results in a successful authentication it
 returns a `AuthenticationResultType`
 ([AWS SDK docs](https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/CognitoIdentityProvider/Types/AuthenticationResultType.html)),
 i.e. an object that responds to `#id_token`, `#access_token`, etc.
+
 However, when a MFA challenge step occurs, `#authenticate` instead returns a
 `RespondToAuthChallengeResponse` ([AWS SDK docs](https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/CognitoIdentityProvider/Types/RespondToAuthChallengeResponse.html#authentication_result-instance_method)),
 which you can check for with `.respond_to?(:challenge_name)` as in the above
-example, extended with the convenience methods `#mfa_challenge?`,
-`#software_token_mfa?` and `#sms_mfa?`.
+example. The `RespondToAuthChallengeResponse` object will be extended with the
+convenience methods `#mfa_challenge?`, `#software_token_mfa?` and `#sms_mfa?`.
+
+The `#respond_to_mfa_challenge` method can be called with the following
+signatures:
+
+```
+#respond_to_mfa_challenge(user_code, auth_response: [, user_id_for_srp:])
+#respond_to_mfa_challenge(user_code, challenge_name:, session: [, user_id_for_srp:])
+```
 
 ## Supported rubies
 
