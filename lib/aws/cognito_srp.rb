@@ -9,6 +9,7 @@ require "base64"
 
 require "aws/cognito_srp/version"
 require "aws/cognito_srp/errors"
+require "aws/cognito_srp/challenge_response_helper"
 
 if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("2.5")
   module IntegerWithPow
@@ -50,6 +51,8 @@ module Aws
     PASSWORD_VERIFIER = "PASSWORD_VERIFIER"
     REFRESH_TOKEN = "REFRESH_TOKEN"
     USER_SRP_AUTH = "USER_SRP_AUTH"
+    SOFTWARE_TOKEN_MFA = "SOFTWARE_TOKEN_MFA"
+    SMS_MFA = "SMS_MFA"
 
     N_HEX = %w(
       FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1 29024E08
@@ -117,6 +120,12 @@ module Aws
 
       auth_response = @aws_client.respond_to_auth_challenge(params)
 
+      if auth_response.challenge_name == SOFTWARE_TOKEN_MFA || auth_response.challenge_name == SMS_MFA
+        auth_response.extend(ChallengeResponseHelper)
+
+        return auth_response
+      end
+
       if auth_response.challenge_name == NEW_PASSWORD_REQUIRED
         raise NewPasswordRequired, "Cognito responded to password verifier with a #{NEW_PASSWORD_REQUIRED} challenge"
       end
@@ -139,6 +148,34 @@ module Aws
       resp.authentication_result
     end
     alias_method :refresh, :refresh_tokens
+
+    def respond_to_mfa_challenge(user_code, auth_response: nil, challenge_name: auth_response&.challenge_name, session: auth_response&.session, user_id_for_srp: @user_id_for_srp)
+      unless auth_response || (challenge_name && session)
+        raise ArgumentError, "Either `auth_response' or `challenge_name'+`session' keyword arguments should be given"
+      end
+
+      hash = @client_secret && secret_hash(user_id_for_srp)
+
+      challenge_responses = {
+        USERNAME: user_id_for_srp,
+        SECRET_HASH: hash
+      }
+      if challenge_name == SOFTWARE_TOKEN_MFA
+        challenge_responses[:SOFTWARE_TOKEN_MFA_CODE] = user_code
+      elsif challenge_name == SMS_MFA
+        challenge_responses[:SMS_MFA_CODE] = user_code
+      end
+
+      params = {
+        challenge_name: challenge_name,
+        session: session,
+        client_id: @client_id,
+        challenge_responses: challenge_responses.compact
+      }.compact
+
+      resp = @aws_client.respond_to_auth_challenge(params)
+      resp.authentication_result
+    end
 
     private
 
