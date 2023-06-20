@@ -45,6 +45,8 @@ resp.refresh_token
 new_tokens = aws_srp.refresh_tokens(resp.refresh_token)
 ```
 
+### `USER_ID_FOR_SRP`
+
 In case you need access to the `USER_ID_FOR_SRP` value from the auth response,
 you can do so by calling `aws_srp.user_id_for_srp` *after* the initial auth
 (`aws_srp` being the same as in the code example above).
@@ -58,21 +60,20 @@ new_tokens = aws_srp.refresh_token(resp.refresh_token,
                                    user_id_for_srp: your_user_id_for_srp)
 ```
 
-### MFA
+### MFA (multi-factor authentication)
 
-Authentication with MFA.
+If you're using MFA you should check for the challenge after calling
+`#authenticate` and respond with `#respond_to_mfa_challenge`.
 
 ```ruby
 resp = aws_srp.authenticate
 
-if resp.respond_to?(:challenge_name) && resp.challenge_name == 'SOFTWARE_TOKEN_MFA'
+if resp.respond_to?(:challenge_name) && resp.mfa_challenge?
+  user_code = get.chomp # Get MFA code from user
 
-  user_code = get.chomp # input MFA code
-
-  resp = aws_srp.respond_to_auth_challenge_mfa(
-    resp.challenge_name,
-    resp.session,
-    user_code
+  resp = aws_srp.respond_to_mfa_challenge(
+    user_code,
+    auth_response: resp
   )
 end
 
@@ -80,6 +81,16 @@ resp.id_token
 resp.access_token
 resp.refresh_token
 ```
+
+Note that when `#authenticate` results in a successful authentication it
+returns a `AuthenticationResultType`
+([AWS SDK docs](https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/CognitoIdentityProvider/Types/AuthenticationResultType.html)),
+i.e. an object that responds to `#id_token`, `#access_token`, etc.
+However, when a MFA challenge step occurs, `#authenticate` instead returns a
+`RespondToAuthChallengeResponse` ([AWS SDK docs](https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/CognitoIdentityProvider/Types/RespondToAuthChallengeResponse.html#authentication_result-instance_method)),
+which you can check for with `.respond_to?(:challenge_name)` as in the above
+example, extended with the convenience methods `#mfa_challenge?`,
+`#software_token_mfa?` and `#sms_mfa?`.
 
 ## Supported rubies
 

@@ -9,6 +9,7 @@ require "base64"
 
 require "aws/cognito_srp/version"
 require "aws/cognito_srp/errors"
+require "aws/cognito_srp/challenge_response_helper"
 
 if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("2.5")
   module IntegerWithPow
@@ -120,6 +121,8 @@ module Aws
       auth_response = @aws_client.respond_to_auth_challenge(params)
 
       if auth_response.challenge_name == SOFTWARE_TOKEN_MFA || auth_response.challenge_name == SMS_MFA
+        auth_response.extend(ChallengeResponseHelper)
+
         return auth_response
       end
 
@@ -146,7 +149,11 @@ module Aws
     end
     alias_method :refresh, :refresh_tokens
 
-    def respond_to_auth_challenge_mfa(challenge_name, session, user_code, user_id_for_srp: @user_id_for_srp)
+    def respond_to_mfa_challenge(user_code, auth_response: nil, challenge_name: auth_response&.challenge_name, session: auth_response&.session, user_id_for_srp: @user_id_for_srp)
+      unless auth_response || (challenge_name && session)
+        raise ArgumentError, "Either `auth_response' or `challenge_name'+`session' keyword arguments should be given"
+      end
+
       hash = @client_secret && secret_hash(user_id_for_srp)
 
       challenge_responses = {
