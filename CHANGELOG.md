@@ -1,8 +1,12 @@
 ## Changelog for aws-cognito-srp-ruby
 
+### 0.6.0 (June 20, 2023)
+
+* Added support for MFA (@suketa)
+
 ### 0.5.0 (February 14❤︎, 2023)
 
-* Added support for `client_secret`
+* Added support for `client_secret` (@suketa)
 
 ### 0.4.0 (October 1, 2021)
 
