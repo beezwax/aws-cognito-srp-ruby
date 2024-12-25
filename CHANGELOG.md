@@ -1,5 +1,9 @@
 ## Changelog for aws-cognito-srp-ruby
 
+### 0.6.1 (December 25, 2024)
+
+* Added support for Ruby 3.4
+
 ### 0.6.0 (June 20, 2023)
 
 * Added support for MFA (@suketa)
