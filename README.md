@@ -9,7 +9,7 @@ An unofficial Ruby library implementing
 [Originally
 translated](https://gist.github.com/jviney/5fd0fab96cd70d5d46853f052be4744c#file-aws_cognito_srp-rb-L4)
 from Python's [Warrant](https://github.com/capless/warrant) by Jonathan Viney,
-packaged into this gem by Pedro Carbajal.
+packaged into this gem by [Beezwax](https://beezwax.net).
 
 ## Installation
 
