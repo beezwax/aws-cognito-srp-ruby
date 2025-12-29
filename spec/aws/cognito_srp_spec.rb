@@ -48,35 +48,43 @@ RSpec.describe Aws::CognitoSrp do
         )
       end
 
-      it "peforms the SRP auth flow and returns the tokens" do
-        tokens = aws_srp.authenticate
+      it "peforms the SRP auth flow" do
+        aws_srp.authenticate
 
-        expect(tokens.id_token).to eq('dummy_id_token')
-        expect(tokens.access_token).to eq('dummy_access_token')
-        expect(tokens.refresh_token).to eq('dummy_refresh_token')
+        expect(client.api_requests).to match([
+          # 1: initiate auth API request
+          hash_including(
+            operation_name: :initiate_auth,
+            params: hash_including(
+              auth_flow: "USER_SRP_AUTH",
+              auth_parameters: hash_including(
+                "USERNAME" => "username",
+                "SRP_A" => a_string_matching(/[0-9a-f]+/),
+              )
+            )
+          ),
 
-        expect(client.api_requests.first).to include(
-          operation_name: :initiate_auth,
-          params: hash_including(
-            auth_flow: "USER_SRP_AUTH",
-            auth_parameters: hash_including(
-              "USERNAME" => "username",
-              "SRP_A" => a_string_matching(/[0-9a-f]+/),
+          # 2: respond to auth challenge API request
+          hash_including(
+            operation_name: :respond_to_auth_challenge,
+            params: hash_including(
+              challenge_name: "PASSWORD_VERIFIER",
+              challenge_responses: hash_including(
+                "TIMESTAMP" => a_string_matching(/^[A-Z][a-z]{2} [A-Z][a-z]{2} \d\d? \d\d:\d\d:\d\d UTC \d{4,}$/),
+                "USERNAME" => "DUMMY_USER_ID_FOR_SRP",
+                "PASSWORD_CLAIM_SECRET_BLOCK" => a_string_matching(b64_re),
+                "PASSWORD_CLAIM_SIGNATURE" => a_string_matching(b64_re)
+              )
             )
           )
-        )
+        ])
+      end
 
-        expect(client.api_requests[1]).to include(
-          operation_name: :respond_to_auth_challenge,
-          params: hash_including(
-            challenge_name: "PASSWORD_VERIFIER",
-            challenge_responses: hash_including(
-              "TIMESTAMP" => a_string_matching(/^[A-Z][a-z]{2} [A-Z][a-z]{2} \d\d? \d\d:\d\d:\d\d UTC \d{4,}$/),
-              "USERNAME" => "DUMMY_USER_ID_FOR_SRP",
-              "PASSWORD_CLAIM_SECRET_BLOCK" => a_string_matching(b64_re),
-              "PASSWORD_CLAIM_SIGNATURE" => a_string_matching(b64_re)
-            )
-          )
+      it "returns the tokens" do
+        expect(aws_srp.authenticate).to have_attributes(
+          id_token: 'dummy_id_token',
+          access_token: 'dummy_access_token',
+          refresh_token: 'dummy_refresh_token'
         )
       end
     end
@@ -93,37 +101,45 @@ RSpec.describe Aws::CognitoSrp do
         )
       end
 
-      it "peforms the SRP auth flow and returns the tokens" do
-        tokens = aws_srp.authenticate
+      it "peforms the SRP auth flow" do
+        aws_srp.authenticate
 
-        expect(tokens.id_token).to eq('dummy_id_token')
-        expect(tokens.access_token).to eq('dummy_access_token')
-        expect(tokens.refresh_token).to eq('dummy_refresh_token')
+        expect(client.api_requests).to match([
+          # 1: initiate auth API request
+          hash_including(
+            operation_name: :initiate_auth,
+            params: hash_including(
+              auth_flow: "USER_SRP_AUTH",
+              auth_parameters: hash_including(
+                "USERNAME" => "username",
+                "SRP_A" => a_string_matching(/[0-9a-f]+/),
+                "SECRET_HASH" => a_string_matching(b64_re),
+              )
+            )
+          ),
 
-        expect(client.api_requests.first).to include(
-          operation_name: :initiate_auth,
-          params: hash_including(
-            auth_flow: "USER_SRP_AUTH",
-            auth_parameters: hash_including(
-              "USERNAME" => "username",
-              "SRP_A" => a_string_matching(/[0-9a-f]+/),
-              "SECRET_HASH" => a_string_matching(b64_re),
+          # 2: respond to auth challenge API request
+          hash_including(
+            operation_name: :respond_to_auth_challenge,
+            params: hash_including(
+              challenge_name: "PASSWORD_VERIFIER",
+              challenge_responses: hash_including(
+                "TIMESTAMP" => a_string_matching(/^[A-Z][a-z]{2} [A-Z][a-z]{2} \d\d? \d\d:\d\d:\d\d UTC \d{4,}$/),
+                "USERNAME" => "DUMMY_USER_ID_FOR_SRP",
+                "PASSWORD_CLAIM_SECRET_BLOCK" => a_string_matching(b64_re),
+                "PASSWORD_CLAIM_SIGNATURE" => a_string_matching(b64_re),
+                "SECRET_HASH" => a_string_matching(b64_re),
+              )
             )
           )
-        )
+        ])
+      end
 
-        expect(client.api_requests[1]).to include(
-          operation_name: :respond_to_auth_challenge,
-          params: hash_including(
-            challenge_name: "PASSWORD_VERIFIER",
-            challenge_responses: hash_including(
-              "TIMESTAMP" => a_string_matching(/^[A-Z][a-z]{2} [A-Z][a-z]{2} \d\d? \d\d:\d\d:\d\d UTC \d{4,}$/),
-              "USERNAME" => "DUMMY_USER_ID_FOR_SRP",
-              "PASSWORD_CLAIM_SECRET_BLOCK" => a_string_matching(b64_re),
-              "PASSWORD_CLAIM_SIGNATURE" => a_string_matching(b64_re),
-              "SECRET_HASH" => a_string_matching(b64_re),
-            )
-          )
+      it "returns the tokens" do
+        expect(aws_srp.authenticate).to have_attributes(
+          id_token: 'dummy_id_token',
+          access_token: 'dummy_access_token',
+          refresh_token: 'dummy_refresh_token'
         )
       end
     end
@@ -147,12 +163,13 @@ RSpec.describe Aws::CognitoSrp do
       end
 
       it "returns the challenge name and session" do
-        response = aws_srp.authenticate
-        expect(response.challenge_name).to eq('SOFTWARE_TOKEN_MFA')
-        expect(response.session).to eq('dummy_session')
-        expect(response.mfa_challenge?).to eq(true)
-        expect(response.software_token_mfa?).to eq(true)
-        expect(response.sms_mfa?).to eq(false)
+        expect(aws_srp.authenticate).to have_attributes(
+          challenge_name: 'SOFTWARE_TOKEN_MFA',
+          session: 'dummy_session',
+          mfa_challenge?: true,
+          software_token_mfa?: true,
+          sms_mfa?: false
+        )
       end
     end
   end
@@ -186,20 +203,26 @@ RSpec.describe Aws::CognitoSrp do
       end
 
       it "peforms a refresh token flow and returns the new tokens" do
-        tokens = aws_srp.refresh_tokens("dummy_refresh_token")
+        aws_srp.refresh_tokens("dummy_refresh_token")
 
-        expect(tokens.id_token).to eq('dummy_id_token')
-        expect(tokens.access_token).to eq('dummy_access_token')
-        expect(tokens.refresh_token).to eq('dummy_refresh_token')
-
-        expect(client.api_requests.first).to include(
-          operation_name: :initiate_auth,
-          params: hash_including(
-            auth_flow: "REFRESH_TOKEN",
-            auth_parameters: hash_including(
-              "REFRESH_TOKEN" => "dummy_refresh_token"
+        expect(client.api_requests).to contain_exactly(
+          hash_including(
+            operation_name: :initiate_auth,
+            params: hash_including(
+              auth_flow: "REFRESH_TOKEN",
+              auth_parameters: hash_including(
+                "REFRESH_TOKEN" => "dummy_refresh_token"
+              )
             )
           )
+        )
+      end
+
+      it "returns the new tokens" do
+        expect(aws_srp.refresh_tokens("dummy_refresh_token")).to have_attributes(
+          id_token: 'dummy_id_token',
+          access_token: 'dummy_access_token',
+          refresh_token: 'dummy_refresh_token'
         )
       end
     end
@@ -216,20 +239,26 @@ RSpec.describe Aws::CognitoSrp do
         )
       end
 
-      it "peforms a refresh token flow and returns the new tokens" do
-        tokens = aws_srp.refresh_tokens("dummy_refresh_token", user_id_for_srp: "dummy_user_id_for_srp")
+      it "returns the new tokens" do
+        expect(aws_srp.refresh_tokens("dummy_refresh_token", user_id_for_srp: "dummy_user_id_for_srp")).to have_attributes(
+          id_token: 'dummy_id_token',
+          access_token: 'dummy_access_token',
+          refresh_token: 'dummy_refresh_token'
+        )
+      end
 
-        expect(tokens.id_token).to eq('dummy_id_token')
-        expect(tokens.access_token).to eq('dummy_access_token')
-        expect(tokens.refresh_token).to eq('dummy_refresh_token')
+      it "peforms a refresh token flow" do
+        aws_srp.refresh_tokens("dummy_refresh_token", user_id_for_srp: "dummy_user_id_for_srp")
 
-        expect(client.api_requests.first).to include(
-          operation_name: :initiate_auth,
-          params: hash_including(
-            auth_flow: "REFRESH_TOKEN",
-            auth_parameters: hash_including(
-              "REFRESH_TOKEN" => "dummy_refresh_token",
-              "SECRET_HASH" => a_string_matching(b64_re)
+        expect(client.api_requests).to contain_exactly(
+          hash_including(
+            operation_name: :initiate_auth,
+            params: hash_including(
+              auth_flow: "REFRESH_TOKEN",
+              auth_parameters: hash_including(
+                "REFRESH_TOKEN" => "dummy_refresh_token",
+                "SECRET_HASH" => a_string_matching(b64_re)
+              )
             )
           )
         )
@@ -279,7 +308,9 @@ RSpec.describe Aws::CognitoSrp do
         password:   "password",
         pool_id:    "us-west-2_NqkuZcXQY",
         client_id:  "4l9rvl4mv5es1eep1qe97cautn",
-        aws_client: Aws::CognitoIdentityProvider::Client.new(region: "us-west-2")
+        aws_client: Aws::CognitoIdentityProvider::Client.new(
+          region: "us-west-2", validate_params: false, stub_responses: {}
+        )
       )
 
       expect(aws_srp.method(:refresh)).to eq(aws_srp.method(:refresh_tokens))
@@ -313,50 +344,61 @@ RSpec.describe Aws::CognitoSrp do
       )
     end
 
-    it "validates required keyword arguments raising an exception" do
-      expect { aws_srp.respond_to_mfa_challenge('dummy_user_code') }.to raise_error(ArgumentError)
-      expect { aws_srp.respond_to_mfa_challenge('dummy_user_code', session: 'dummy_session') }.to raise_error(ArgumentError)
-      expect { aws_srp.respond_to_mfa_challenge('dummy_user_code', challenge_name: 'SOFTWARE_TOKEN_MFA') }.to raise_error(ArgumentError)
-    end
+    it { expect { aws_srp.respond_to_mfa_challenge('dummy_user_code') }.to raise_error(ArgumentError) }
+    it { expect { aws_srp.respond_to_mfa_challenge('dummy_user_code', session: 'dummy_session') }.to raise_error(ArgumentError) }
+    it { expect { aws_srp.respond_to_mfa_challenge('dummy_user_code', challenge_name: 'SOFTWARE_TOKEN_MFA') }.to raise_error(ArgumentError) }
 
-    it "calls respond_to_auth_challenge api with access_token and settings" do
+    it "calls respond_to_auth_challenge API with access_token and settings" do
       response = aws_srp.respond_to_mfa_challenge(
         'dummy_user_code',
         challenge_name: 'SOFTWARE_TOKEN_MFA',
         session: 'dummy_session'
       )
 
-      expect(client.api_requests[0]).to include(
-        operation_name: :respond_to_auth_challenge,
-        params: hash_including(
-          challenge_name: 'SOFTWARE_TOKEN_MFA',
-          session: 'dummy_session',
-          challenge_responses: {
-            "SOFTWARE_TOKEN_MFA_CODE" => 'dummy_user_code'
-          }
+      expect(client.api_requests).to contain_exactly(
+        hash_including(
+          operation_name: :respond_to_auth_challenge,
+          params: hash_including(
+            challenge_name: 'SOFTWARE_TOKEN_MFA',
+            session: 'dummy_session',
+            challenge_responses: {
+              "SOFTWARE_TOKEN_MFA_CODE" => 'dummy_user_code'
+            }
+          )
         )
       )
-      expect(response.id_token).to eq('dummy_id_token')
-      expect(response.access_token).to eq('dummy_access_token')
-      expect(response.refresh_token).to eq('dummy_refresh_token')
+    end
+
+    it "returns the tokens" do
+      response = aws_srp.respond_to_mfa_challenge(
+        'dummy_user_code',
+        challenge_name: 'SOFTWARE_TOKEN_MFA',
+        session: 'dummy_session'
+      )
+
+      expect(response).to have_attributes(
+        id_token: 'dummy_id_token',
+        access_token: 'dummy_access_token',
+        refresh_token: 'dummy_refresh_token',
+      )
     end
 
     it "extracts challenge_name and session from auth_response object if given" do
       response = aws_srp.respond_to_mfa_challenge(
         'dummy_user_code',
-        auth_response: double('ChallengeResponse',
-                              challenge_name: 'SOFTWARE_TOKEN_MFA',
-                              session: 'dummy_session')
+        auth_response: double('ChallengeResponse', challenge_name: 'SOFTWARE_TOKEN_MFA', session: 'dummy_session')
       )
 
-      expect(client.api_requests[0]).to include(
-        operation_name: :respond_to_auth_challenge,
-        params: hash_including(
-          challenge_name: 'SOFTWARE_TOKEN_MFA',
-          session: 'dummy_session',
-          challenge_responses: {
-            "SOFTWARE_TOKEN_MFA_CODE" => 'dummy_user_code'
-          }
+      expect(client.api_requests).to contain_exactly(
+        hash_including(
+          operation_name: :respond_to_auth_challenge,
+          params: hash_including(
+            challenge_name: 'SOFTWARE_TOKEN_MFA',
+            session: 'dummy_session',
+            challenge_responses: {
+              "SOFTWARE_TOKEN_MFA_CODE" => 'dummy_user_code'
+            }
+          )
         )
       )
     end

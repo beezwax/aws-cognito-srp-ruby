@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "aws-sdk-cognitoidentityprovider"
   spec.add_dependency "base64"
 
-  spec.add_development_dependency "bundler", "~> 2.2"
+  spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "nokogiri", "~> 1.9"
   spec.add_development_dependency "rspec", "~> 3.0"
