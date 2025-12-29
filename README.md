@@ -103,7 +103,7 @@ signatures:
 
 ## Supported rubies
 
-This gem is tested against and supports Ruby 2.7 through 3.3, JRuby and
+This gem is tested against and supports Ruby 2.7 through 4.0, JRuby and
 TruffleRuby.
 
 ## Development
